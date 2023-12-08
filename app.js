@@ -1,21 +1,57 @@
 'use strict';
-
-let data = '1101000 1110100 1110100 1110000 1110011 111010 101111 101111 1110100 1110111 1101001 1110100 1110100 1100101 1110010 101110 1100011 1101111 1101101 101111 1110010 1100001 1100011 1101000 1100101 1101100 1110100 1101111 1100010 1100001 1100011 101111 1110011 1110100 1100001 1110100 1110101 1110011 101111 110001 110011 110101 110010 110100 110000 111001 110110 110011 110110 110111 111001 110010 110100 111001 110010 110000 110011 110101 111111 1110011 111101 110010 110001';
-data = data.split(' ');
-let out = new ArrayBuffer(data.length);
-let outArr = new Uint8Array(out);
-for (let i = 0; i < data.length; i++)
-{
-	let b = 0;
-	let k = 0;
-	for (let j = data[i].length - 1; j >= 0 ; j--)
-	{
-		if (data[i][j] === '1') b ^= 1 << k;
-		k++;
-	}
-	outArr[i] = b;
-	
-}
-console.log(outArr);
+'use strict';
 const fs = require('fs');
-fs.writeFileSync('out.txt', Buffer.from(out));
+const path = require('path');
+const input = process.argv[2];
+
+if (!input)
+{
+	console.log(`INPUT_FILE [-x, --hex]
+You should specify input text file with bit simbols (0 or 1) or hex simbols (0-F)
+--hex or -x key forsely read input file in hex mode`);
+	process.exit(0);
+}
+let data = fs.readFileSync(input).toString();
+data = data.replace(/\r|\n|\s/g, '');
+if (data.match(/[^0-9A-F]/i) !== null)
+{
+	console.error('Text must contain bit simbols (0 or 1) or hex simbols (0-F)');
+	process.exit(1);
+}
+let isHex = data.match(/[2-9A-F]/i) !== null;
+if (!isHex && (process.argv[3] === '--hex' || process.argv[3] === '-x')) isHex = true;
+let result = null;
+if (isHex)
+{
+	if (data.length % 2 !== 0) data = data + '0';
+	result = Buffer.from(data, 'hex');
+}
+else
+{
+	let zeros = 8 - data.length % 8;
+	if (zeros !== 8)
+	{
+		const strArr = new Array(zeros);
+		for (let i = 0; i < zeros; i++)
+		{
+			strArr[i] = '0';
+		}
+		data = data + strArr.join('');
+	}
+	result = new Uint8Array(data.length / 8);
+	let j = 0;
+	for (let i = 0; i < result.length; i++)
+	{
+		const strByte = data.slice(j, j + 8);
+		j += 8;
+		let b = 0;
+		for (let k = 7; k >= 0 ; k--)
+		{
+			if (strByte[k] === '1') b |= 1 << 7 - k;
+		}
+		result[i] = b;
+	}
+
+}
+
+fs.writeFileSync(path.basename(input, '.txt') + '.bin', result);
