@@ -8,7 +8,7 @@ if (!input)
 {
 	console.log(`INPUT_FILE [-x, --hex]
 You should specify input text file with bit simbols (0 or 1) or hex simbols (0-F)
---hex or -x key forsely read input file in hex mode`);
+--hex or -x key to force read input file in hex mode`);
 	process.exit(0);
 }
 let data = fs.readFileSync(input).toString();
